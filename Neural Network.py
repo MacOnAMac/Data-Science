@@ -8,45 +8,33 @@ from sklearn.compose import make_column_transformer
 from tensorflow import keras
 from keras import layers
 
-"Load data"
-hotel_data = pd.read_csv("hotel.csv")
+data = pd.read_csv('data1.csv')
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 100)
 
 
+print("dtypes before EDA =", data.dtypes)
+data.drop(data.index[(data["Sensor3"] == "-")], axis=0, inplace=True)
 
-#Assign target and inputs
-X = hotel_data.copy()
-y = X.pop('is_canceled')
+"Separate Target and variables"
+X = data.copy()
+y = X.pop('Target')
 
-"Specific one hot encode the data"
-X['arrival_date_month'] = \
-    X['arrival_date_month'].map(
-        {'January': 1, 'February': 2, 'March': 3,
-         'April': 4, 'May': 5, 'June': 6, 'July': 7,
-         'August': 8, 'September': 9, 'October': 10,
-         'November': 11, 'December': 12}
-    )
 
-"seperate numeric and categoric data"
 features_num = [
-    "lead_time", "arrival_date_week_number",
-    "arrival_date_day_of_month", "stays_in_weekend_nights",
-    "stays_in_week_nights", "adults", "children", "babies",
-    "is_repeated_guest", "previous_cancellations",
-    "previous_bookings_not_canceled", "required_car_parking_spaces",
-    "total_of_special_requests", "adr",
+    "ComponentAge", "MonthlyRunTime",
+    "FlowRate", "OPXVolume",
+    "MaxOutputRate", "Sensor1", "Sensor2", "Sensor3",
+    "Sensor4", "Sensor5",
+    "Sensor5.1", "DaysSinceMaintenance",
 ]
 features_cat = [
-    "hotel", "arrival_date_month", "meal",
-    "market_segment", "distribution_channel",
-    "reserved_room_type", "deposit_type", "customer_type",
+    "Location",
 ]
 
-"Create pipeline"
-
+"Try meadian Value"
 transformer_num = make_pipeline(
-    SimpleImputer(strategy="constant"),
+    SimpleImputer(strategy="median"),
     StandardScaler(),
 )
 transformer_cat = make_pipeline(
@@ -71,6 +59,12 @@ input_shape = [X_train.shape[1]]
 "Create model"
 model = keras.Sequential([
     layers.BatchNormalization(input_shape=input_shape),
+    layers.Dense(256, activation='relu'),
+    layers.BatchNormalization(input_shape=input_shape),
+    layers.Dropout(0.3),
+    layers.Dense(256, activation='relu'),
+    layers.BatchNormalization(input_shape=input_shape),
+    layers.Dropout(0.3),
     layers.Dense(256, activation='relu'),
     layers.BatchNormalization(input_shape=input_shape),
     layers.Dropout(0.3),
@@ -103,5 +97,6 @@ history = model.fit(
 history_df = pd.DataFrame(history.history)
 history_df.loc[:, ['loss', 'val_loss']].plot(title="Cross-entropy")
 history_df.loc[:, ['binary_accuracy', 'val_binary_accuracy']].plot(title="Accuracy")
+
 
 plt.show()
